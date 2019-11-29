@@ -95,21 +95,24 @@ extension MainViewController: UICollectionViewDataSource {
 extension MainViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let image = assets[indexPath.row].originalImage
+       
         if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
-            cell.activityIndicator.startAnimating()
             cell.activityIndicator.isHidden = false
+            cell.activityIndicator.startAnimating()
         }
-        
-        networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
-            if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
-                cell.activityIndicator.stopAnimating()
-                cell.activityIndicator.isHidden = true
-            }
-            if let image = self?.assets[indexPath.row].thumbnailImage {
-                self?.save(url: urlString, date: self!.currentDate, image: image.pngData()!)
-            }
-        })
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
+            let image = self.assets[indexPath.row].originalImage
+            self.networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
+                if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+                    cell.activityIndicator.stopAnimating()
+                    cell.activityIndicator.isHidden = true
+                }
+                if let image = self?.assets[indexPath.row].thumbnailImage {
+                    self?.save(url: urlString, date: self!.currentDate, image: image.pngData()!)
+                }
+            })
+        }
     }
 }
 

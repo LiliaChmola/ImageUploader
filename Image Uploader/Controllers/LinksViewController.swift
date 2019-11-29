@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreData
+import SafariServices
 
 class LinksViewController: UIViewController {
     @IBOutlet weak var tableView: UITableView!
@@ -55,6 +56,18 @@ extension LinksViewController: UITableViewDataSource {
         }
         
         return cell
+    }
+}
+
+// MARK: - UITableViewDelegate
+extension LinksViewController: UITableViewDelegate {
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if let urlString = links[indexPath.row].value(forKey: "url") as? String {
+            if let url = URL(string: urlString) {
+                let svc = SFSafariViewController(url: url)
+                present(svc, animated: true, completion: nil)
+            }
+        }
     }
 }
 
