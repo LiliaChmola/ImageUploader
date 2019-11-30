@@ -11,9 +11,9 @@ import Photos
 import CoreData
 
 class MainViewController: UIViewController {
-    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet private weak var collectionView: UICollectionView!
     private lazy var  networkManager = NetworkManager()
-    private var currentDate: String {
+    private var currentDateString: String {
         let date = Date()
         let format = DateFormatter()
         format.dateFormat = "dd.MM.yyyy, HH:mm"
@@ -21,11 +21,14 @@ class MainViewController: UIViewController {
         return formattedDate
     }
     private var assets = [PHAsset]()
+    private var selectedIndexPath = [IndexPath]()
+    private var links = [NSManagedObject]()
     
     // MARK: - Controller lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         fetchPHAssets()
+        fetchSavedLinks()
     }
     
     override func viewDidLayoutSubviews() {
@@ -56,7 +59,22 @@ class MainViewController: UIViewController {
         })
     }
     
-    private func save(url: String, date: String, image: Data) {
+    // MARK: - Core Data
+    private func fetchSavedLinks() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        
+        let managedContext = appDelegate.persistentContainer.viewContext
+        let fetchRequest =
+            NSFetchRequest<NSManagedObject>(entityName: "Link")
+        
+        do {
+            links = try managedContext.fetch(fetchRequest)
+        } catch let error as NSError {
+            print("Could not fetch. \(error), \(error.userInfo)")
+        }
+    }
+    
+    private func save(url: String, date: String, image: Data, path: String) {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         
         let managedContext = appDelegate.persistentContainer.viewContext
@@ -66,7 +84,9 @@ class MainViewController: UIViewController {
         link.setValue(url, forKeyPath: "url")
         link.setValue(date, forKeyPath: "date")
         link.setValue(image, forKey: "image")
+        link.setValue(path, forKey: "path")
         
+        links.append(link)
         do {
             try managedContext.save()
         } catch let error as NSError {
@@ -85,8 +105,34 @@ extension MainViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MainCollectionViewCell", for: indexPath) as? MainCollectionViewCell else { return UICollectionViewCell() }
         cell.imageView.image = assets[indexPath.row].thumbnailImage
-        cell.activityIndicator.isHidden = true
         
+        // TODO: - Rewrite
+        // Set uploaded style for uploaded images
+        for link in links {
+            if let linkPath = link.value(forKey: "path") as? String {
+                assets[indexPath.row].getPath { (path) in
+                    if linkPath == path {
+                        cell.setUploadedStyle()
+                    }
+                }
+            }
+        }
+
+        if selectedIndexPath.contains(indexPath) {
+            cell.setUploadingStyle()
+            for link in links {
+                if let linkPath = link.value(forKey: "path") as? String {
+                    assets[indexPath.row].getPath { (path) in
+                        if linkPath == path {
+                            cell.setUploadedStyle()
+                        }
+                    }
+                }
+            }
+        } else {
+            cell.setDefaultStyle()
+        }
+
         return cell
     }
 }
@@ -95,23 +141,29 @@ extension MainViewController: UICollectionViewDataSource {
 extension MainViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-       
-        if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
-            cell.activityIndicator.isHidden = false
-            cell.activityIndicator.startAnimating()
-        }
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self = self else { return }
-            let image = self.assets[indexPath.row].originalImage
-            self.networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
-                if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
-                    cell.activityIndicator.stopAnimating()
-                    cell.activityIndicator.isHidden = true
-                }
-                if let image = self?.assets[indexPath.row].thumbnailImage {
-                    self?.save(url: urlString, date: self!.currentDate, image: image.pngData()!)
-                }
-            })
+        
+        if selectedIndexPath.contains(indexPath) {
+            print("yes")
+        } else {
+            print("no")
+            selectedIndexPath.append(indexPath)
+            if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+                cell.setUploadingStyle()
+            }
+            DispatchQueue.global(qos: .background).async { [weak self] in
+                guard let self = self else { return }
+                let image = self.assets[indexPath.row].originalImage
+                self.networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
+                    
+                    if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+                        cell.setUploadedStyle()
+                    }
+                    if let image = self?.assets[indexPath.row].thumbnailImage { self?.assets[indexPath.row].getPath(compeletion: { (path) in
+                        self?.save(url: urlString, date: self!.currentDateString, image: image.pngData()!, path: path)
+                    })
+                    }
+                })
+            }
         }
     }
 }
@@ -119,13 +171,14 @@ extension MainViewController: UICollectionViewDelegate {
 // MARK: - UICollectionViewDelegateFlowLayout
 extension MainViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+       
         var size = CGSize.init(width: 25, height: 25)
         let orientation = UIDevice.current.orientation
         
-        if orientation.isPortrait {
-            size = CGSize(width: collectionView.bounds.width / 3, height: collectionView.bounds.width / 3)
-        } else if orientation.isLandscape {
+        if orientation.isLandscape {
             size = CGSize(width: collectionView.bounds.width / 5, height: collectionView.bounds.width / 5)
+        } else {
+            size = CGSize(width: collectionView.bounds.width / 3, height: collectionView.bounds.width / 3)
         }
         
         return size

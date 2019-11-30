@@ -19,6 +19,17 @@ extension PHAsset {
         return thumbnail
     }
     
+    func getPath(compeletion: @escaping (String) -> Void) {
+        let imageRequestOptions = PHImageRequestOptions()
+        PHImageManager.default().requestImageData(for: self, options: imageRequestOptions, resultHandler: { imageData, dataUTI, orientation, info in
+            
+            if info?["PHImageFileURLKey"] != nil, let path = info?["PHImageFileURLKey"] as? URL {
+                let imagePath = path.absoluteString
+                compeletion(imagePath)
+            }
+        })
+    }
+    
     var originalImage: UIImage {
         var image: UIImage?
         let manager = PHImageManager.default()

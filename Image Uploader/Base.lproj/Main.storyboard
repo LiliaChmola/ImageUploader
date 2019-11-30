@@ -49,19 +49,32 @@
                                                 <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="VPe-zL-Mcj">
                                                     <rect key="frame" x="58" y="41.666666666666664" width="37" height="36.999999999999993"/>
                                                 </activityIndicatorView>
+                                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="success" translatesAutoresizingMaskIntoConstraints="NO" id="Fh7-hl-4c7">
+                                                    <rect key="frame" x="114" y="10.000000000000002" width="29" height="22.666666666666671"/>
+                                                </imageView>
                                             </subviews>
                                         </view>
                                         <constraints>
                                             <constraint firstItem="BhV-dG-Dau" firstAttribute="height" secondItem="WIh-IP-aem" secondAttribute="height" multiplier="0.95" id="6tz-Bi-1CJ"/>
+                                            <constraint firstItem="Fh7-hl-4c7" firstAttribute="height" secondItem="BhV-dG-Dau" secondAttribute="height" multiplier="0.2" id="7E4-9m-bdG"/>
                                             <constraint firstItem="BhV-dG-Dau" firstAttribute="centerX" secondItem="WIh-IP-aem" secondAttribute="centerX" id="EBS-rc-D1J"/>
                                             <constraint firstItem="VPe-zL-Mcj" firstAttribute="centerX" secondItem="WIh-IP-aem" secondAttribute="centerX" id="H5b-2S-oHS"/>
+                                            <constraint firstAttribute="trailing" secondItem="Fh7-hl-4c7" secondAttribute="trailing" constant="10" id="M3I-lu-BO8"/>
                                             <constraint firstItem="BhV-dG-Dau" firstAttribute="width" secondItem="WIh-IP-aem" secondAttribute="width" multiplier="0.95" id="YvN-mU-hD8"/>
+                                            <constraint firstItem="Fh7-hl-4c7" firstAttribute="top" secondItem="WIh-IP-aem" secondAttribute="top" constant="10" id="fcu-Hd-KwG"/>
                                             <constraint firstItem="VPe-zL-Mcj" firstAttribute="centerY" secondItem="WIh-IP-aem" secondAttribute="centerY" id="hRp-um-B7j"/>
+                                            <constraint firstItem="Fh7-hl-4c7" firstAttribute="width" secondItem="BhV-dG-Dau" secondAttribute="width" multiplier="0.2" id="hqX-ae-LG7"/>
                                             <constraint firstItem="BhV-dG-Dau" firstAttribute="centerY" secondItem="WIh-IP-aem" secondAttribute="centerY" id="oCD-TG-CO8"/>
                                         </constraints>
+                                        <userDefinedRuntimeAttributes>
+                                            <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                <real key="value" value="6"/>
+                                            </userDefinedRuntimeAttribute>
+                                        </userDefinedRuntimeAttributes>
                                         <connections>
                                             <outlet property="activityIndicator" destination="VPe-zL-Mcj" id="ooA-Bx-xMk"/>
                                             <outlet property="imageView" destination="BhV-dG-Dau" id="J9N-Qk-3ff"/>
+                                            <outlet property="isUploadImageView" destination="Fh7-hl-4c7" id="4gI-3k-mHp"/>
                                         </connections>
                                     </collectionViewCell>
                                 </cells>
@@ -71,7 +84,7 @@
                                 </connections>
                             </collectionView>
                         </subviews>
-                        <color key="backgroundColor" red="0.93333333333333335" green="0.94117647058823528" blue="0.96470588235294119" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.98039215686274506" green="0.98039215686274506" blue="0.9882352941176471" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="7Fw-Na-Ogd" secondAttribute="trailing" constant="5" id="B5J-a4-DVq"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="7Fw-Na-Ogd" secondAttribute="bottom" id="C4K-wz-Eer"/>
@@ -95,7 +108,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1024.6376811594205" y="26.086956521739133"/>
+            <point key="canvasLocation" x="1050.7246376811595" y="26.90217391304348"/>
         </scene>
         <!--L I N K S-->
         <scene sceneID="OXQ-Na-SA4">
@@ -135,6 +148,7 @@
                                                     </subviews>
                                                     <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                     <constraints>
+                                                        <constraint firstItem="0Qd-O5-c6K" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="sJR-Kn-kMx" secondAttribute="trailing" constant="8" symbolic="YES" id="Xws-zs-G6a"/>
                                                         <constraint firstItem="0Qd-O5-c6K" firstAttribute="width" secondItem="ZYy-Hh-6vQ" secondAttribute="width" multiplier="0.3" id="bs8-p4-Fp2"/>
                                                         <constraint firstItem="sJR-Kn-kMx" firstAttribute="centerY" secondItem="ZYy-Hh-6vQ" secondAttribute="centerY" id="nxL-wP-Hvj"/>
                                                         <constraint firstItem="sJR-Kn-kMx" firstAttribute="height" secondItem="ZYy-Hh-6vQ" secondAttribute="height" multiplier="0.7" id="sP4-E7-fMV"/>
@@ -256,6 +270,20 @@
                         <textAttributes key="titleTextAttributes">
                             <color key="textColor" red="0.21176470588235294" green="0.28627450980392155" blue="0.37647058823529411" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         </textAttributes>
+                        <userDefinedRuntimeAttributes>
+                            <userDefinedRuntimeAttribute type="number" keyPath="shadowRadius">
+                                <real key="value" value="5"/>
+                            </userDefinedRuntimeAttribute>
+                            <userDefinedRuntimeAttribute type="number" keyPath="shadowOpacity">
+                                <real key="value" value="1"/>
+                            </userDefinedRuntimeAttribute>
+                            <userDefinedRuntimeAttribute type="color" keyPath="shadowColor">
+                                <color key="value" red="0.81568627450980391" green="0.82745098039215681" blue="0.85490196078431369" alpha="1" colorSpace="calibratedRGB"/>
+                            </userDefinedRuntimeAttribute>
+                            <userDefinedRuntimeAttribute type="size" keyPath="shadowOffset">
+                                <size key="value" width="0.0" height="3"/>
+                            </userDefinedRuntimeAttribute>
+                        </userDefinedRuntimeAttributes>
                     </navigationBar>
                     <nil name="viewControllers"/>
                     <connections>
@@ -269,5 +297,6 @@
     </scenes>
     <resources>
         <image name="links" width="24" height="24"/>
+        <image name="success" width="21.333333969116211" height="21.333333969116211"/>
     </resources>
 </document>

@@ -11,9 +11,9 @@ import CoreData
 import SafariServices
 
 class LinksViewController: UIViewController {
-    @IBOutlet weak var tableView: UITableView!
-    @IBOutlet weak var messageView: UIView!
-    var links = [NSManagedObject]()
+    @IBOutlet private weak var tableView: UITableView!
+    @IBOutlet private weak var messageView: UIView!
+    private var links = [NSManagedObject]()
     
     // MARK: - Controller lifecycle
     override func viewWillAppear(_ animated: Bool) {
@@ -65,6 +65,7 @@ extension LinksViewController: UITableViewDelegate {
         if let urlString = links[indexPath.row].value(forKey: "url") as? String {
             if let url = URL(string: urlString) {
                 let svc = SFSafariViewController(url: url)
+                svc.preferredControlTintColor = #colorLiteral(red: 0.9921568627, green: 0.5450980392, blue: 0.5450980392, alpha: 1)
                 present(svc, animated: true, completion: nil)
             }
         }
