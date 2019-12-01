@@ -229,7 +229,7 @@ extension MainViewController: UICollectionViewDelegate {
                     showAlertWith(message: "Image is already loading")
                 }
             } else {
-                let selectedIndexPath = SelectedIndexPath(indexPath: indexPath, status: .none)
+                let selectedIndexPath = SelectedIndexPath(indexPath: indexPath, status: .uploading)
                 selectedIndexPathArray.append(selectedIndexPath)
                 cell.setUploadingStyle()
                 uploadImageWith(indexPath: indexPath)
