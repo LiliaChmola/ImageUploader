@@ -12,6 +12,7 @@ import CoreData
 
 class MainViewController: UIViewController {
     @IBOutlet private weak var collectionView: UICollectionView!
+    @IBOutlet weak var messageView: UIView!
     private lazy var  networkManager = NetworkManager()
     private var currentDateString: String {
         let date = Date()
@@ -21,14 +22,23 @@ class MainViewController: UIViewController {
         return formattedDate
     }
     private var assets = [PHAsset]()
-    private var selectedIndexPath = [IndexPath]()
+    private var selectedIndexPathArray = [SelectedIndexPath]()
     private var links = [NSManagedObject]()
     
     // MARK: - Controller lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        requestAuthorizationIfNeeded()
         fetchPHAssets()
         fetchSavedLinks()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        if assets.isEmpty {
+            fetchPHAssets()
+        }
     }
     
     override func viewDidLayoutSubviews() {
@@ -39,6 +49,12 @@ class MainViewController: UIViewController {
     // MARK: - IBAction func
     @IBAction func linksBarButtonTapped(_ sender: Any) {
         performSegue(withIdentifier: "fromMainToLinks", sender: nil)
+    }
+    
+    @IBAction func goToSettingsButton(_ sender: Any) {
+        if let url = URL.init(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
     }
     
     // MARK: - Private funcs
@@ -56,7 +72,31 @@ class MainViewController: UIViewController {
         
         fetchAssets.enumerateObjects({ [weak self] (asset, _, _) in
             self?.assets.append(asset)
+            DispatchQueue.main.async {
+                self?.collectionView.reloadData()
+                self?.collectionView.isHidden = false
+                self?.messageView.isHidden = true
+            }
         })
+    }
+    
+    private func requestAuthorizationIfNeeded() {
+        if PHPhotoLibrary.authorizationStatus() != .authorized {
+            PHPhotoLibrary.requestAuthorization { [weak self] (status) in
+                DispatchQueue.main.async {
+                    if status == .authorized {
+                        self?.messageView.isHidden = true
+                        self?.fetchPHAssets()
+                    } else {
+                        self?.messageView.isHidden = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private func getSelectedIndexPath(for indexPath: IndexPath) -> SelectedIndexPath? {
+        return selectedIndexPathArray.filter({$0.indexPath == indexPath}).first
     }
     
     // MARK: - Core Data
@@ -118,16 +158,11 @@ extension MainViewController: UICollectionViewDataSource {
             }
         }
 
-        if selectedIndexPath.contains(indexPath) {
-            cell.setUploadingStyle()
-            for link in links {
-                if let linkPath = link.value(forKey: "path") as? String {
-                    assets[indexPath.row].getPath { (path) in
-                        if linkPath == path {
-                            cell.setUploadedStyle()
-                        }
-                    }
-                }
+        if let selectedIndexPath = getSelectedIndexPath(for: indexPath) {
+            if selectedIndexPath.isUploaded {
+                cell.setUploadedStyle()
+            } else {
+                cell.setUploadingStyle()
             }
         } else {
             cell.setDefaultStyle()
@@ -142,19 +177,27 @@ extension MainViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
-        if selectedIndexPath.contains(indexPath) {
+        if let selectedIndexPath = getSelectedIndexPath(for: indexPath) {
+            // TODO: - Show alert
             print("yes")
         } else {
             print("no")
-            selectedIndexPath.append(indexPath)
+            let selectedIndexPath = SelectedIndexPath(indexPath: indexPath, isUploaded: false)
+            selectedIndexPathArray.append(selectedIndexPath)
+            
             if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
                 cell.setUploadingStyle()
             }
+            
+            // TODO: - add method
             DispatchQueue.global(qos: .background).async { [weak self] in
                 guard let self = self else { return }
                 let image = self.assets[indexPath.row].originalImage
                 self.networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
                     
+                    if let selectedIndexPath = self?.getSelectedIndexPath(for: indexPath) {
+                        selectedIndexPath.isUploaded = true
+                    }
                     if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
                         cell.setUploadedStyle()
                     }
