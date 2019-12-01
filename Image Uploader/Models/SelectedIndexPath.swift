@@ -9,11 +9,17 @@
 import Foundation
 
 class SelectedIndexPath {
-    var indexPath: IndexPath
-    var isUploaded: Bool
+    enum Status {
+        case uploaded
+        case uploading
+        case failure
+        case none
+    }
     
-    init(indexPath: IndexPath, isUploaded: Bool) {
+    var indexPath: IndexPath
+    var status: Status
+    init(indexPath: IndexPath, status: SelectedIndexPath.Status) {
         self.indexPath = indexPath
-        self.isUploaded = isUploaded
+        self.status = status
     }
 }

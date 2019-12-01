@@ -99,6 +99,54 @@ class MainViewController: UIViewController {
         return selectedIndexPathArray.filter({$0.indexPath == indexPath}).first
     }
     
+    private func uploadImageWith(indexPath: IndexPath) {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            guard let self = self else { return }
+            let image = self.assets[indexPath.row].originalImage
+            self.networkManager.post(image: image.resizedTo1MB()!, "user", success: { [weak self] (urlString) in
+                if let selectedIndexPath = self?.getSelectedIndexPath(for: indexPath) {
+                    selectedIndexPath.status = .uploaded
+                }
+                if let cell = self?.collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+                    cell.setUploadedStyle()
+                }
+                if let image = self?.assets[indexPath.row].thumbnailImage { self?.assets[indexPath.row].getPath(compeletion: { (path) in
+                    self?.save(url: urlString, date: self!.currentDateString, image: image.pngData()!, path: path)
+                })
+                }
+                }, failure: { [weak self] in
+                    if let selectedIndexPath = self?.getSelectedIndexPath(for: indexPath) {
+                        selectedIndexPath.status = .failure
+                    }
+            })
+        }
+    }
+    
+    private func isCurrentPhotoUploadedFor(indexPath: IndexPath, completion: @escaping (Bool) -> Void) {
+        for link in links {
+            if let linkPath = link.value(forKey: "path") as? String {
+                assets[indexPath.row].getPath { (path) in
+                    if linkPath == path {
+                        completion(true)
+                    }
+                }
+            }
+        }
+        completion(false)
+    }
+    
+    private func showAlertWith(message: String) {
+        let alertController = UIAlertController(title: "Error", message:
+            message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "Ok", style: .default))
+        alertController.view.tintColor = #colorLiteral(red: 0.9921568627, green: 0.5450980392, blue: 0.5450980392, alpha: 1)
+        alertController.view.backgroundColor = #colorLiteral(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)
+        alertController.view.cornerRadius = 6
+        alertController.view.clipsToBounds = true
+        
+        self.present(alertController, animated: true, completion: nil)
+    }
+    
     // MARK: - Core Data
     private func fetchSavedLinks() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
@@ -143,25 +191,19 @@ extension MainViewController: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MainCollectionViewCell", for: indexPath) as? MainCollectionViewCell else { return UICollectionViewCell() }
-        cell.imageView.image = assets[indexPath.row].thumbnailImage
         
-        // TODO: - Rewrite
-        // Set uploaded style for uploaded images
-        for link in links {
-            if let linkPath = link.value(forKey: "path") as? String {
-                assets[indexPath.row].getPath { (path) in
-                    if linkPath == path {
-                        cell.setUploadedStyle()
-                    }
-                }
-            }
-        }
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MainCollectionViewCell", for: indexPath) as? MainCollectionViewCell else { return UICollectionViewCell() }
+        
+        cell.imageView.image = assets[indexPath.row].thumbnailImage
 
+        isCurrentPhotoUploadedFor(indexPath: indexPath) { (uploaded) in
+            cell.setUploadedStyle()
+        }
+        
         if let selectedIndexPath = getSelectedIndexPath(for: indexPath) {
-            if selectedIndexPath.isUploaded {
+            if selectedIndexPath.status == .uploaded {
                 cell.setUploadedStyle()
-            } else {
+            } else if selectedIndexPath.status == .uploading {
                 cell.setUploadingStyle()
             }
         } else {
@@ -176,36 +218,21 @@ extension MainViewController: UICollectionViewDataSource {
 extension MainViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        
-        if let selectedIndexPath = getSelectedIndexPath(for: indexPath) {
-            // TODO: - Show alert
-            print("yes")
-        } else {
-            print("no")
-            let selectedIndexPath = SelectedIndexPath(indexPath: indexPath, isUploaded: false)
-            selectedIndexPathArray.append(selectedIndexPath)
-            
-            if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+    
+        if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
+            if cell.isUploaded {
+                showAlertWith(message: "Image has already been uploaded")
+            } else if let selectedIndexPath = getSelectedIndexPath(for: indexPath) {
+                if selectedIndexPath.status == .uploaded {
+                    showAlertWith(message: "Image has already been uploaded")
+                } else if selectedIndexPath.status == .uploading {
+                    showAlertWith(message: "Image is already loading")
+                }
+            } else {
+                let selectedIndexPath = SelectedIndexPath(indexPath: indexPath, status: .none)
+                selectedIndexPathArray.append(selectedIndexPath)
                 cell.setUploadingStyle()
-            }
-            
-            // TODO: - add method
-            DispatchQueue.global(qos: .background).async { [weak self] in
-                guard let self = self else { return }
-                let image = self.assets[indexPath.row].originalImage
-                self.networkManager.post(image: image.resizedTo1MB()!, "user", completion: { [weak self] (urlString) in
-                    
-                    if let selectedIndexPath = self?.getSelectedIndexPath(for: indexPath) {
-                        selectedIndexPath.isUploaded = true
-                    }
-                    if let cell = collectionView.cellForItem(at: indexPath) as? MainCollectionViewCell {
-                        cell.setUploadedStyle()
-                    }
-                    if let image = self?.assets[indexPath.row].thumbnailImage { self?.assets[indexPath.row].getPath(compeletion: { (path) in
-                        self?.save(url: urlString, date: self!.currentDateString, image: image.pngData()!, path: path)
-                    })
-                    }
-                })
+                uploadImageWith(indexPath: indexPath)
             }
         }
     }

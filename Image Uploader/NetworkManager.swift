@@ -11,7 +11,7 @@ import Alamofire
 
 class NetworkManager {
     
-    func post(image: UIImage, _ username: String, completion: @escaping (String) -> Void) {
+    func post(image: UIImage, _ username: String, success: @escaping (String) -> Void, failure: @escaping () -> Void) {
         
         let imageData = image.pngData()
         let base64Image = imageData?.base64EncodedString(options: .lineLength64Characters)
@@ -34,10 +34,15 @@ class NetworkManager {
                         upload.response { response in
                             let json = try? JSONSerialization.jsonObject(with: response.data!, options: .allowFragments) as? [String:Any]
                             let imageDic = json?["data"] as? [String:Any]
-                            completion(imageDic?["link"] as! String)
+                            if let imageString = imageDic?["link"] as? String {
+                                success(imageString)
+                            } else {
+                                failure()
+                            }
                         }
                     case .failure(let encodingError):
                         print("error:\(encodingError)")
+                        failure()
                     }
         })
     }

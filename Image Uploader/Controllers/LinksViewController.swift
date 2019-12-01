@@ -29,19 +29,14 @@ class LinksViewController: UIViewController {
         } catch let error as NSError {
             print("Could not fetch. \(error), \(error.userInfo)")
         }
+        messageView.isHidden = !links.isEmpty
     }
 }
 
 // MARK: - UITableViewDataSource
 extension LinksViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if links.isEmpty {
-            messageView.isHidden = false
-            return 0
-        } else {
-            messageView.isHidden = true
-            return links.count
-        }
+        return links.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
