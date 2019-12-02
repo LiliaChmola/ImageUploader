@@ -118,6 +118,7 @@ class MainViewController: UIViewController {
                     if let selectedIndexPath = self?.getSelectedIndexPath(for: indexPath) {
                         selectedIndexPath.status = .failure
                     }
+                    self?.showAlertWith(message: "Something went wrong, try again later")
             })
         }
     }
